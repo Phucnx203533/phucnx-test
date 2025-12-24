@@ -110,11 +110,8 @@
     <div id="ui-layer">
         <div id="status" class="badge">🎄 Merry Christmas 2025 🎄</div>
         <div class="guide">
-            🖐 <b>Xòe tay:</b> Bung quà & đèn<br>
-            👌 <b>Pinch:</b> Xem ảnh<br>
-            ✊ <b>Nắm tay:</b> Thu cây<br>
-            🤲 <b>2 tay ghép:</b> Trái tim<br>
-            🌀 <b>Xoay vòng khi xòe:</b> Tăng tốc cây & lấp lánh!
+            🖐 <b>Xòe tay:</b> Mở cây & bung quà<br>
+            ✊ <b>Nắm tay:</b> Thu cây
         </div>
         <button id="btnStart" onclick="startSystem()">Bắt Đầu</button>
     </div>
@@ -133,7 +130,7 @@
         bgMusic.volume = 1.0;
 
         const loader = new THREE.TextureLoader();
-        const photoFiles = ['./img/nhi_2.jpg', './img/nhi_3.jpg', './img/nhi_4.jpg', './img/nhi_5.jpg'];
+        const photoFiles = ['./img/nhi_6.jpg', './img/nhi_3.jpg', './img/nhi_4.jpg', './img/nhi_5.jpg'];
         const photoTextures = photoFiles.map(f => loader.load(f));
 
         function createCustomTexture(type) {
@@ -187,26 +184,16 @@
             explodeRadius: 65,
             photoOrbitRadius: 25,
             treeHeight: 70,
-            treeBaseRadius: 35,
-            heartSize: 40
+            treeBaseRadius: 35
         };
 
         let scene, camera, renderer;
         let groupGold, groupRed, groupGift;
         let photoMeshes = [];
-        let titleMesh, starMesh, loveTextMesh;
+        let titleMesh, starMesh;
 
-        let state = 'TREE';
-        let selectedIndex = 0;
+        let state = 'TREE'; // TREE (thu) hoặc EXPLODE (mở)
         let handX = 0.5;
-        let heartRotation = 0;
-
-        // === CỬ CHỈ XOAY VÒNG ===
-        let isCircling = false;
-        let circleProgress = 0;
-        let prevAngle = null;
-        const CIRCLE_THRESHOLD = 0.12; // bán kính tối thiểu để nhận diện xoay
-        const CIRCLE_COMPLETE = 1.0;   // hoàn thành 1 vòng
 
         // ==========================================
         // 3. THREE.JS SYSTEM
@@ -237,7 +224,6 @@
             const pPositions = [];
             const pExplodeTargets = [];
             const pTreeTargets = [];
-            const pHeartTargets = [];
 
             for (let i = 0; i < count; i++) {
                 const h = Math.random() * CONFIG.treeHeight;
@@ -265,19 +251,12 @@
                 const ez = rad * Math.cos(phi);
                 pExplodeTargets.push(ex, ey, ez);
 
-                const t = Math.random() * Math.PI * 2;
-                const s = CONFIG.heartSize;
-                let hx = s * 16 * Math.pow(Math.sin(t), 3) / 16;
-                let hy = s * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16;
-                let hz = (Math.random() - 0.5) * 15;
-                pHeartTargets.push(hx, hy, hz);
-
                 pPositions.push(tx, y, tz);
             }
 
             const geo = new THREE.BufferGeometry();
             geo.setAttribute('position', new THREE.Float32BufferAttribute(pPositions, 3));
-            geo.userData = { tree: pTreeTargets, explode: pExplodeTargets, heart: pHeartTargets };
+            geo.userData = { tree: pTreeTargets, explode: pExplodeTargets };
 
             const mat = new THREE.PointsMaterial({
                 size: size,
@@ -305,8 +284,8 @@
                     side: THREE.DoubleSide
                 });
                 const mesh = new THREE.Mesh(geo, mat);
-                mesh.visible = false;
-                mesh.scale.set(0, 0, 0);
+                mesh.visible = true; // Luôn hiển thị
+                mesh.scale.set(1, 1, 1);
                 scene.add(mesh);
                 photoMeshes.push(mesh);
             });
@@ -352,44 +331,11 @@
             starMesh = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), starMat);
             starMesh.position.set(0, CONFIG.treeHeight / 2 + 2, 0);
             scene.add(starMesh);
-
-            // Chữ I LOVE YOU trong trái tim
-            const loveCanvas = document.createElement('canvas');
-            loveCanvas.width = 1024;
-            loveCanvas.height = 256;
-            const lctx = loveCanvas.getContext('2d');
-            lctx.clearRect(0, 0, 1024, 256);
-            lctx.font = 'bold italic 120px "Times New Roman"';
-            lctx.textAlign = 'center';
-            lctx.fillStyle = '#FF3366';
-            lctx.shadowColor = '#FF99AA';
-            lctx.shadowBlur = 40;
-            lctx.fillText('MERRY CHRISTMAS', 512, 160);
-
-            const loveTex = new THREE.CanvasTexture(loveCanvas);
-            const loveMat = new THREE.MeshBasicMaterial({
-                map: loveTex,
-                transparent: true,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false
-            });
-
-            loveTextMesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(40, 10),
-                loveMat
-            );
-            loveTextMesh.position.set(0, 0, 0);
-            loveTextMesh.visible = false;
-            scene.add(loveTextMesh);
         }
 
-        function updateParticleGroup(group, targetState, speed, handRotY, time, isBlinking) {
+        function updateParticleGroup(group, targetState, speed, handRotY, time) {
             const positions = group.geometry.attributes.position.array;
-            let targetKey = 'tree';
-            if (targetState === 'EXPLODE' || targetState === 'PHOTO') targetKey = 'explode';
-            else if (targetState === 'HEART') targetKey = 'heart';
-
-            const targets = group.geometry.userData[targetKey];
+            const targets = group.geometry.userData[targetState === 'TREE' ? 'tree' : 'explode'];
 
             for (let i = 0; i < positions.length; i++) {
                 positions[i] += (targets[i] - positions[i]) * speed;
@@ -398,15 +344,7 @@
 
             if (targetState === 'TREE') {
                 group.rotation.y += 0.003;
-                if (isBlinking) {
-                    const scale = 1 + Math.sin(time * 5) * 0.2;
-                    group.scale.set(scale, scale, scale);
-                } else {
-                    group.scale.set(1, 1, 1);
-                }
-            } else if (targetState === 'HEART') {
                 group.scale.set(1, 1, 1);
-                group.rotation.y = heartRotation;
             } else {
                 group.scale.set(1, 1, 1);
                 group.rotation.y += (handRotY - group.rotation.y) * 0.05;
@@ -416,61 +354,32 @@
         function animate() {
             requestAnimationFrame(animate);
             const time = Date.now() * 0.001;
-            const baseSpeed = 0.06;
+            const speed = 0.06;
             const handRotY = (handX - 0.5) * 2.5;
 
-            // Tăng tốc khi xoay vòng
-            const currentSpeed = isCircling ? baseSpeed * 3 : baseSpeed; // xoay nhanh gấp 3 lần
-            const blink = isCircling ? true : false;
+            updateParticleGroup(groupGold, state, speed, handRotY, time);
+            updateParticleGroup(groupRed, state, speed, handRotY, time);
+            updateParticleGroup(groupGift, state, speed, handRotY, time);
 
-            updateParticleGroup(groupGold, state, currentSpeed, handRotY, time, blink);
-            updateParticleGroup(groupRed, state, currentSpeed, handRotY, time, blink);
-            updateParticleGroup(groupGift, state, currentSpeed, handRotY, time, blink);
-
-            if (state === 'HEART') {
-                heartRotation += 0.01;
-                loveTextMesh.visible = true;
-                const pulse = 1 + Math.sin(time * 3) * 0.05;
-                loveTextMesh.scale.set(pulse, pulse, 1);
-                loveTextMesh.lookAt(camera.position);
-            }
-
+            // Ảnh tự xoay vòng
+            const photoAngleStep = (Math.PI * 2) / photoMeshes.length;
+            const baseAngle = Date.now() * 0.0005; // Tốc độ xoay tự động
             photoMeshes.forEach((mesh, i) => {
-                if (state === 'EXPLODE') {
-                    const baseAngle = groupGold.rotation.y;
-                    const angleStep = (Math.PI * 2) / photoMeshes.length;
-                    const angle = baseAngle + i * angleStep;
-                    const x = Math.sin(angle) * CONFIG.photoOrbitRadius;
-                    const z = Math.cos(angle) * CONFIG.photoOrbitRadius;
-                    const y = Math.sin(time + i) * 3;
+                const angle = baseAngle + i * photoAngleStep;
+                const x = Math.sin(angle) * CONFIG.photoOrbitRadius;
+                const z = Math.cos(angle) * CONFIG.photoOrbitRadius;
+                const y = Math.sin(time * 2 + i) * 3; // Lên xuống nhẹ
 
-                    mesh.visible = true;
-                    mesh.position.lerp(new THREE.Vector3(x, y, z), 0.1);
-                    mesh.lookAt(camera.position);
+                mesh.position.set(x, y, z);
+                mesh.lookAt(camera.position);
 
-                    const distScale = 1.0 + (z / CONFIG.photoOrbitRadius) * 0.8;
-                    mesh.scale.lerp(new THREE.Vector3(distScale, distScale, distScale), 0.1);
-
-                    if (z > 5 && i === selectedIndex) selectedIndex = i;
-                } else if (state === 'PHOTO') {
-                    if (i === selectedIndex) {
-                        mesh.position.lerp(new THREE.Vector3(0, 0, 60), 0.1);
-                        mesh.scale.lerp(new THREE.Vector3(5, 5, 5), 0.1);
-                        mesh.lookAt(camera.position);
-                        mesh.rotation.z = 0;
-                    } else {
-                        mesh.scale.lerp(new THREE.Vector3(0, 0, 0), 0.1);
-                    }
-                } else {
-                    mesh.scale.lerp(new THREE.Vector3(0, 0, 0), 0.1);
-                    mesh.visible = false;
-                }
+                const distScale = 1.0 + (z / CONFIG.photoOrbitRadius) * 0.5;
+                mesh.scale.set(distScale, distScale, distScale);
             });
 
             if (state === 'TREE') {
                 titleMesh.visible = true;
                 starMesh.visible = true;
-                loveTextMesh.visible = false;
             } else {
                 titleMesh.visible = false;
                 starMesh.visible = false;
@@ -491,101 +400,35 @@
 
             let frameCnt = 0;
             const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-            hands.setOptions({ maxNumHands: 2, modelComplexity: 0, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
 
             hands.onResults(results => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
-
-                // 2 tay tạo hình trái tim
-                if (results.multiHandLandmarks.length === 2) {
-                    const hand1 = results.multiHandLandmarks[0];
-                    const hand2 = results.multiHandLandmarks[1];
-                    const thumb1 = hand1[4], index1 = hand1[8];
-                    const thumb2 = hand2[4], index2 = hand2[8];
-
-                    const thumbDist = Math.hypot(thumb1.x - thumb2.x, thumb1.y - thumb2.y);
-                    const indexDist = Math.hypot(index1.x - index2.x, index1.y - index2.y);
-                    const avgY1 = (thumb1.y + index1.y) / 2;
-                    const avgY2 = (thumb2.y + index2.y) / 2;
-
-                    if (thumbDist < 0.08 && indexDist > 0.15 && Math.abs(avgY1 - avgY2) < 0.1) {
-                        state = 'HEART';
-                        statusDiv.innerText = "🤲 Trái Tim";
-                        statusDiv.style.color = "#FF69B4";
-                        isCircling = false;
-                        return;
-                    }
-                }
 
                 if (results.multiHandLandmarks.length > 0) {
                     const lm = results.multiHandLandmarks[0];
                     handX = lm[9].x;
 
                     const wrist = lm[0];
-                    const palmCenter = lm[9];
                     const tips = [8, 12, 16, 20];
                     let openDist = 0;
                     tips.forEach(i => openDist += Math.hypot(lm[i].x - wrist.x, lm[i].y - wrist.y));
                     const avgDist = openDist / 4;
 
-                    const pinchDist = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
-
                     if (avgDist < 0.25) {
                         state = 'TREE';
                         statusDiv.innerText = "✊ Thu Cây";
                         statusDiv.style.color = "#FFD700";
-                        isCircling = false;
-                        prevAngle = null;
-                        circleProgress = 0;
-                    } else if (pinchDist < 0.05) {
-                        state = 'PHOTO';
-                        statusDiv.innerText = "👌 Xem Ảnh";
-                        statusDiv.style.color = "#00FFFF";
-                        isCircling = false;
                     } else {
-                        // Xòe tay → kiểm tra xoay vòng
                         state = 'EXPLODE';
-                        statusDiv.innerText = "🖐 Bung Quà & Đèn";
-
-                        const indexTip = lm[8];
-                        const dx = indexTip.x - palmCenter.x;
-                        const dy = indexTip.y - palmCenter.y;
-                        const radius = Math.hypot(dx, dy);
-
-                        if (radius > CIRCLE_THRESHOLD) {
-                            const currentAngle = Math.atan2(dy, dx);
-
-                            if (prevAngle !== null) {
-                                let deltaAngle = currentAngle - prevAngle;
-                                if (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
-                                if (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
-
-                                if (Math.abs(deltaAngle) > 0.1) {
-                                    circleProgress += Math.abs(deltaAngle) / (2 * Math.PI);
-                                    circleProgress = Math.min(circleProgress, 2.0);
-
-                                    if (circleProgress >= CIRCLE_COMPLETE && !isCircling) {
-                                        isCircling = true;
-                                        statusDiv.innerText = "🌀 Xoay Tròn! 🎉";
-                                        statusDiv.style.color = "#FF00FF";
-                                    }
-                                }
-                            }
-                            prevAngle = currentAngle;
-                        } else {
-                            prevAngle = null;
-                            circleProgress = 0;
-                            isCircling = false;
-                        }
+                        statusDiv.innerText = "🖐 Mở Cây & Bung Quà";
+                        statusDiv.style.color = "#FFA500";
                     }
                 } else {
                     state = 'TREE';
                     statusDiv.innerText = "🎄 Merry Christmas 🎄";
                     statusDiv.style.color = "#FFF";
-                    isCircling = false;
-                    prevAngle = null;
-                    circleProgress = 0;
                 }
             });
 

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>💖 Thiệp 20/10 — Món quà dành cho bạn</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600..900&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box} html,body{margin:0; height:100%}
+:root{
+  --ink:#2a1a22; --soft:#fff6fb; --glass:rgba(255,255,255,.12);
+  --accent:#ff5aa5; --accent-2:#b38bff; --accent-3:#58f8d1;
+}
+body{
+  font-family: Nunito, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color:#fff; background:#0f0a12; overflow:hidden;
+}
+
+/* ===== STARFIELD / HEART CANVAS BACKDROP ===== */
+#bg{position:fixed; inset:0; z-index:0; background:radial-gradient(1200px 900px at 50% 40%, #3b2146, #0f0a12 75%)}
+
+/* ===== LAYOUT ===== */
+.app{ position:relative; z-index:2; display:flex; min-height:100vh; align-items:center; justify-content:center; padding:28px }
+.shell{
+  width:min(980px,100%); display:grid; grid-template-columns: 1.1fr .9fr;
+  gap:20px; align-items:stretch;
+}
+@media (max-width:840px){ .shell{grid-template-columns:1fr; gap:16px} }
+
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:24px; padding:24px; backdrop-filter: blur(10px);
+  box-shadow: 0 12px 50px rgba(0,0,0,.45);
+}
+
+/* ===== LEFT PANEL (TITLE) ===== */
+.hero{
+  position:relative; overflow:hidden; isolation:isolate;
+}
+.hero h1{
+  font-family:"Playfair Display", serif; font-weight:800; letter-spacing:.3px;
+  font-size: clamp(28px, 4vw, 42px); line-height:1.14; margin:10px 0 6px;
+  background: linear-gradient(90deg, #fff, #ffd6e7, #e7d1ff);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.badge{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 14px; border-radius:999px; font-weight:800; font-size:.95rem;
+  background:linear-gradient(90deg, rgba(255,255,255,.2), rgba(255,255,255,.08));
+  border:1px solid rgba(255,255,255,.22);
+}
+.hero .hi{ margin:8px 0 10px; font-size:1.05rem; color:#ffe9f5 }
+.hero .name{ color:#fff; font-weight:900; }
+.hero .msg{ font-style:italic; color:#ffe3f1 }
+
+.hero .controls{ display:flex; flex-wrap:wrap; gap:10px; margin-top:16px }
+.btn{
+  padding:10px 14px; border:0; border-radius:14px; cursor:pointer; font-weight:800;
+  color:#0f0a12; background:#fff; transition:.15s transform, .15s filter;
+}
+.btn:active{ transform:scale(.96) }
+.btn.ghost{ background:transparent; color:#fff; border:1px solid rgba(255,255,255,.25) }
+
+/* ===== TILES GRID ===== */
+.grid{
+  display:grid; gap:14px;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+}
+.tile{
+  position:relative; background:linear-gradient(140deg, rgba(255,255,255,.16), rgba(255,255,255,.07));
+  border:1px solid rgba(255,255,255,.22); border-radius:18px; padding:18px;
+  min-height:120px; overflow:hidden; cursor:pointer; transform-style:preserve-3d;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.tile:hover{ transform: translateY(-2px) rotate3d(1, -1, 0, 6deg); box-shadow: 0 12px 30px rgba(0,0,0,.35) }
+.tile h3{ margin:6px 0 2px; font-size:1.12rem }
+.tile p{ margin:0; opacity:.85; font-size:.96rem }
+.tile .tag{ position:absolute; top:10px; right:10px; font-size:.8rem; opacity:.85 }
+.tile .shine{
+  position:absolute; inset:-20%; background: radial-gradient(400px 200px at var(--mx,50%) var(--my,50%),
+   rgba(255,255,255,.25), transparent 60%); mix-blend-mode: screen; pointer-events:none;
+}
+.tile[data-kind="beauty"]{ border-color: rgba(255,90,165,.5) }
+.tile[data-kind="strength"]{ border-color: rgba(179,139,255,.5) }
+.tile[data-kind="success"]{ border-color: rgba(115,255,206,.5) }
+.tile[data-kind="happiness"]{ border-color: rgba(255,218,124,.6) }
+.tile[data-kind="shine"]{ border-color: rgba(255,255,255,.5) }
+
+/* ===== REVEAL PANELS ===== */
+.panel{
+  position: fixed; inset: 0; display:none; place-items:center; z-index:5;
+  background: rgba(0,0,0,.45); padding:22px;
+}
+.panel.active{ display:grid }
+.panel .sheet{
+  width:min(680px, 100%); border-radius:22px; padding:24px;
+  background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.06));
+  border:1px solid rgba(255,255,255,.25); backdrop-filter: blur(14px);
+  box-shadow: 0 20px 80px rgba(0,0,0,.55); position:relative; overflow:hidden;
+}
+.panel-image {
+  display: block;
+  width: 80%;
+  max-width: 600px;
+  max-height: 70vh;
+  object-fit: cover;
+  margin: 1.5rem auto 0;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.sheet h2{ margin:0 0 6px; font-size:1.6rem }
+.sheet .lead{ margin:0 0 12px; opacity:.92 }
+.sheet .body{ line-height:1.62 }
+.close{
+  position:absolute; top:12px; right:12px; border:0; border-radius:12px;
+  background:rgba(255,255,255,.2); color:#fff; padding:8px 10px; cursor:pointer; font-weight:800;
+}
+
+/* small flourish line */
+.hr{
+  height:1px; width:100%; margin:12px 0 10px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent);
+}
+
+/* Flower hint strip when in-app */
+.open-external {
+  position:fixed; left:50%; transform:translateX(-50%);
+  top:10px; z-index:10; background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.25); color:#fff;
+  border-radius:999px; padding:8px 14px; font-size:.9rem; display:none;
+  backdrop-filter: blur(8px);
+}
+.open-external a{ color:#fff; font-weight:800; text-decoration:underline }
+
+/* Corner controls */
+.play-btn{
+  position:fixed; right:16px; bottom:16px; z-index:10;
+  padding:12px 16px; border:0; border-radius:999px; font-weight:800; cursor:pointer;
+  color:#0f0a12; background:#fff; box-shadow:0 16px 40px rgba(0,0,0,.4)
+}
+
+/* accessibility */
+@media (prefers-reduced-motion: reduce){
+  .tile:hover{ transform:none }
+}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+
+<!-- Audio -->
+<audio id="bgm" preload="auto" playsinline loop
+  src="music.mp3"></audio>
+
+<!-- in-app hint -->
+<div id="ext" class="open-external" role="alert">
+  Nếu không nghe nhạc, hãy <a id="openExternal" href="#" rel="noopener">mở bằng trình duyệt ngoài</a>.
+</div>
+
+<!-- corner button -->
+<button id="play" class="play-btn" aria-label="Phát nhạc nền">🔈 Phát nhạc</button>
+
+<div class="app">
+  <div class="shell">
+
+    <!-- LEFT: Title / intro -->
+    <section class="card hero" aria-label="Lời chúc 20/10">
+      <span class="badge">20 • 10 • <span id="year"></span></span>
+      <h1>Gửi emmmm bông hoa đẹp nhất</h1>
+      <p class="hi">Gửi <span class="name" id="toName2">Emmm Oanh</span>, <span class="msg" id="shortMsg">Mong những sự đang yêu này mà anh lén chuẩn bị cho em, những món quà mà anh tặng có thể ôm ấp và xua tan đi những áp lực quanh em ❤️ </span></p>
+      <div class="hr"></div>
+      <div class="controls">
+        <!-- <button class="btn" id="share"></button>
+        <button class="btn ghost" id="copy"></button> -->
+        <!-- <button class="btn ghost" id="confetti">🎉 Rắc kim tuyến</button> -->
+      </div>
+    </section>
+
+    <!-- RIGHT: Interactive tiles -->
+    <section class="card">
+      <div class="grid" id="grid">
+        <!-- Tiles are generated by JS for cleaner structure -->
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- Reveal Panel -->
+<div class="panel" id="panel" aria-modal="true" role="dialog" aria-hidden="true">
+  <div class="sheet">
+    <button class="close" id="close">✕</button>
+    <h2 id="ph"></h2>
+    <p class="lead" id="pl"></p>
+    <div class="hr"></div>
+    <div class="body" id="pb"></div>
+  </div>
+</div>
+
+<script>
+/* ===== Utils ===== */
+const $  = s => document.querySelector(s);
+const bg = $('#bg'), ctx = bg.getContext('2d');
+const bgm= $('#bgm'), playBtn = $('#play');
+const ext= $('#ext'), openExt=$('#openExternal');
+const panel=$('#panel'), ph=$('#ph'), pl=$('#pl'), pb=$('#pb');
+const yearEl=$('#year'); yearEl.textContent = new Date().getFullYear();
+
+function isInApp(){return /zalo|fbav|line|instagram|tiktok|micromessenger/i.test(navigator.userAgent);}
+function openInBrowser(e){e.preventDefault(); window.open(location.href,'_blank');}
+function setPlayingUI(p){ playBtn.textContent = p ? "🔊 Đang phát" : "🔈 Phát nhạc"; }
+
+function fadeTo(vol, ms=900){
+  const steps=28, start=bgm.volume||0, step=(vol-start)/steps;
+  let i=0; const iv=setInterval(()=>{
+    i++; bgm.volume = Math.max(0, Math.min(1, start + step*i));
+    if(i>=steps){ bgm.volume = vol; clearInterval(iv); }
+  }, Math.max(16, ms/steps));
+}
+async function autoplayMuted(){
+  try{ bgm.muted=true; bgm.volume=0.0; await bgm.play(); setPlayingUI(true);}catch{ setPlayingUI(false); }
+}
+async function unmuteAndFade(){
+  try{
+    if(bgm.paused) await bgm.play();
+    if(bgm.muted || bgm.volume===0){ bgm.muted=false; fadeTo(.44,900); setPlayingUI(true); }
+    else{ if(!bgm.paused){ bgm.pause(); setPlayingUI(false);} else { await bgm.play(); setPlayingUI(true);} }
+  }catch{}
+}
+function attachFirstInteraction(){
+  const once = async () => { await unmuteAndFade(); cleanup(); };
+  const cleanup = () => evts.forEach(e=>document.removeEventListener(e, once));
+  const evts=['pointerdown','touchstart','click','keydown','scroll'];
+  evts.forEach(e=>document.addEventListener(e, once, {once:true, passive:true}));
+}
+
+/* ===== Personalized params ===== */
+function params(){
+  const u=new URL(location.href);
+  return {
+    to:  u.searchParams.get('to'),
+    msg: u.searchParams.get('msg')
+  };
+}
+function personalize(){
+  const p = params();
+  if(p.to){ $('#toName').textContent=p.to; $('#toName2').textContent=p.to; }
+  if(p.msg){ $('#shortMsg').textContent=p.msg; }
+}
+
+/* ===== Share & Copy ===== */
+async function copyLink(){
+  try{ await navigator.clipboard.writeText(location.href); }
+  catch{ const t=document.createElement('textarea'); t.value=location.href; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+}
+async function sharePage(){
+  // const p=params(); const title="Thiệp 20/10 💖";
+  // const text=`Gửi ${p.to||"em"} — Một món quà dành cho bạn.`;
+  // if(navigator.share){ try{ await navigator.share({title, text, url:location.href}); }catch{} }
+  // else{ await copyLink(); alert("Đã sao chép liên kết vào clipboard!"); }
+}
+
+/* ===== Confetti (emoji burst) ===== */
+const emojis=['🌸','🌺','🌷','💐','🌼','💖','✨','🦋'];
+function burst(n=36){ for(let i=0;i<n;i++) setTimeout(()=>particle(), i*35); }
+function particle(){
+  const d=document.createElement('div');
+  d.textContent=emojis[Math.random()*emojis.length|0];
+  d.style.position='fixed'; d.style.left=(Math.random()*100)+'%'; d.style.top='-10px'; d.style.zIndex=12;
+  d.style.fontSize=(20+Math.random()*20)+'px';
+  d.style.transition='transform 2.6s ease, opacity 2.6s ease';
+  document.body.appendChild(d);
+  requestAnimationFrame(()=>{
+    const x=(Math.random()*2-1)*200, y=window.innerHeight+80;
+    d.style.transform=`translate(${x}px, ${y}px) rotate(${Math.random()*720-360}deg)`;
+    d.style.opacity=0;
+  });
+  setTimeout(()=>d.remove(), 2700);
+}
+
+/* ===== Tiles content ===== */
+const tiles = [
+  {
+    kind:'beauty',  title:'Vẻ đẹp rạng rỡ', lead:'Một nụ cười làm anh mê đắm.',
+    body:`Khi nhìn thấy <b>em</b> em cười nó như bông hoa.
+    Chúc em luôn luôn vui cười và luôn là chính mình. ✨`,
+    image: 'https://scontent.fhan2-5.fna.fbcdn.net/v/t39.30808-6/481208281_1620888548555517_2915064681120791205_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=53a332&_nc_ohc=ZZ12aB5uuW4Q7kNvwFjG45-&_nc_oc=Adn7O4NLEuGqqeblW9pxomicRxp8ngAa6FxvGgaMIHa699SXfcw3lAmFbjOcQhnngW_76xTMor-hRnxGBu7sFH8Y&_nc_zt=23&_nc_ht=scontent.fhan2-5.fna&_nc_gid=3R5-iHlBMwmZGLvVF4s76A&_nc_ss=8&oh=00_Afy8YYFHHWUfDso05po89fIL-DOECsv60UjPppOhBq2RQA&oe=69B35B33'
+  },
+  {
+    kind:'strength', title:'Sức mạnh nội tâm', lead:'Vững vàng và dịu dàng.',
+    body:`Sức mạnh của em không phải ồn ào, mà là <b>bền bỉ</b>.
+    Chúc em đủ can đảm nói “không”, đủ dịu dàng nói “được”, và đủ bình yên để mỉm cười. 💪`,
+    image: 'https://scontent.fhan2-4.fna.fbcdn.net/v/t39.30808-6/477909655_1604003826910656_6147688816722880841_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=53a332&_nc_ohc=GzhQnMTR_fwQ7kNvwFrcEoy&_nc_oc=AdmxxgWhmkmJ2pGw_x--6pxC2fFLTuZ5Ml-ZGC2fT65NYJqQnE6v0PwyeBs4CDXmGYOuDBpVAWh5miapl2FMLLTs&_nc_zt=23&_nc_ht=scontent.fhan2-4.fna&_nc_gid=nc9nRy_y82fAmkGOEEb_iA&_nc_ss=8&oh=00_AfweBrVu4XruQo6PkgnsR0v0B9cAucBg4ywOQjrpVgTD3w&oe=69B35677'
+  },
+  {
+    kind:'success', title:'Thành công bền vững', lead:'Đi chậm không sao, miễn là đúng hướng.',
+    body:`Những nỗ lực lặng thầm rồi sẽ đơm hoa. Chúc em gặt hái những thành tựu xứng đáng từng bước một`,
+    image: 'https://scontent.fhan20-1.fna.fbcdn.net/v/t39.30808-6/482025970_1621683475142691_3221130620861409832_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=53a332&_nc_ohc=akYXNaPsatAQ7kNvwHb6eTK&_nc_oc=AdmXn9aPBkl6QFlgYhtQiwR7DgB-p312nmb3RbxpLoF-aEdhFlxdi0oJJSe7_sh9h_uhd2k1lbDhQNUPwt2vrNLy&_nc_zt=23&_nc_ht=scontent.fhan20-1.fna&_nc_gid=NZ5PWtnzvpapq_9DvwJmRA&_nc_ss=8&oh=00_AfywVjDtfZgunPY6oZDlhwnj4qHFd293bWC0fRCLX946eg&oe=69B35FB2'
+  },
+  {
+    kind:'happiness', title:'Hạnh phúc viên mãn', lead:'Nhỏ xíu mà đầy.',
+    body:`Một bông hoa nhỏ, một bản nhạc ưa thích, một tin nhắn dễ thương:
+    Chúc em luôn có <b>những niềm vui nhỏ</b> để ghép thành hạnh phúc lớn. 🌹🎵`,
+    image: 'https://scontent.fhan2-5.fna.fbcdn.net/v/t39.30808-6/534387244_1738811133429924_9102397114549757678_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=53a332&_nc_ohc=8ylJ0hz-C7YQ7kNvwHDm1S2&_nc_oc=AdmqgIrDYjIJMUdr9btre47rh_ZjDt4a8ZdAHbLvBjMYTLoMzQ-bqw_KlHpiEFKzangnXwuEKMMkVh5jgcoIoCvN&_nc_zt=23&_nc_ht=scontent.fhan2-5.fna&_nc_gid=s_sKFskyumIdpUKiBM8Ifw&_nc_ss=8&oh=00_AfwI-P7tQO_lJwKKKiT-GrIotCsz3qkrJX4UGvPxIi80Qw&oe=69B3572F'
+  },
+  {
+    kind:'shine', title:'Lan tỏa tích cực', lead:'Em là nguồn sáng.',
+    body:`Chúc em tiếp tục <b>lan tỏa</b> yêu thương và cũng luôn nhận lại điều dịu dàng ấy. 🌟`,
+    image: 'https://scontent.fhan2-3.fna.fbcdn.net/v/t39.30808-6/504967299_1686178638693174_87854286532766338_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=53a332&_nc_ohc=1HpIL2_pzFkQ7kNvwFEUw8q&_nc_oc=Adn_fQ6iGjJJ3iBYuKkJLKFgcpU7R1Y1VBgtKq6erKNNF0Dw_tVVqtZq5VOxWFeb3DsAoBFCZ4lTTrj-rAtktxml&_nc_zt=23&_nc_ht=scontent.fhan2-3.fna&_nc_gid=B97kd57TyytCOLrCXh4vNw&_nc_ss=8&oh=00_AfyhtORkaGZgaeNd5Y6WjMbDyoYk1k-00tFazJX1Hb-5NQ&oe=69B35C46'
+  }
+];
+
+/* ===== Build tiles ===== */
+/* ===== Tạo grid ===== */
+function buildGrid() {
+  const g = $('#grid');
+  g.innerHTML = '';
+
+  for (const t of tiles) {
+    const el = document.createElement('article');
+    el.className = 'tile';
+    el.dataset.kind = t.kind;
+    el.setAttribute('tabindex', '0');
+
+    // nội dung trong mỗi tile (chưa có ảnh)
+    el.innerHTML = `
+      <div class="shine"></div>
+      <h3>${iconFor(t.kind)} ${t.title}</h3>
+      <p>${t.lead}</p>
+    `;
+
+    // hiệu ứng pointer shine
+    el.addEventListener('pointermove', e => {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+      el.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+    });
+
+    // mở panel khi click / Enter / Space
+    const open = () => showPanel(t);
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open();
+      }
+    });
+
+    g.appendChild(el);
+  }
+}
+
+/* ===== Biểu tượng cho từng loại tile ===== */
+function iconFor(kind) {
+  return {
+    beauty: '🌸',
+    strength: '💪',
+    success: '✨',
+    happiness: '❤️',
+    shine: '🌟'
+  }[kind] || '💖';
+}
+
+/* ===== Hiển thị popup panel ===== */
+function showPanel(t) {
+  // giả sử bạn đã có 3 phần tử này trong HTML
+  // <h2 id="ph"></h2>  (ph = panel header)
+  // <p id="pl"></p>    (pl = panel lead)
+  // <div id="pb"></div> (pb = panel body)
+  ph.innerHTML = `${iconFor(t.kind)} ${t.title}`;
+  pl.innerHTML = t.lead;
+
+  // thêm nội dung và ảnh (nếu có)
+  pb.innerHTML = `
+    <div class="panel-body-text">${t.body}</div>
+    ${t.image ? `<img src="${t.image}" alt="${t.title}" class="panel-image">` : ''}
+  `;
+
+  panel.classList.add('active');
+  panel.setAttribute('aria-hidden', 'false');
+  chime(); // âm thanh hiệu ứng nếu bạn có
+}
+
+/* ===== Đóng panel ===== */
+function closePanel() {
+  panel.classList.remove('active');
+  panel.setAttribute('aria-hidden', 'true');
+}
+
+$('#close').addEventListener('click', closePanel);
+panel.addEventListener('click', e=>{ if(e.target===panel) closePanel(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePanel(); });
+
+/* ===== Tiny WebAudio chime (no external file) ===== */
+let ac;
+function chime(){
+  try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type='triangle'; o.frequency.value=880; // A5
+    g.gain.value=.0001;
+    o.connect(g).connect(ac.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(.25, ac.currentTime+.02);
+    o.frequency.exponentialRampToValueAtTime(1320, ac.currentTime+.18);
+    g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime+.28);
+    o.stop(ac.currentTime+.3);
+  }catch{}
+}
+
+/* ===== Background canvas: heart constellation ===== */
+let W=0,H=0, parts=[];
+function resize(){
+  W = bg.width = innerWidth * devicePixelRatio;
+  H = bg.height= innerHeight* devicePixelRatio;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+function heart(t){ // parametric heart curve
+  const x = 16*Math.sin(t)**3, y = 13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+  return {x,y};
+}
+function initStars(){
+  parts=[]; const N=120;
+  for(let i=0;i<N;i++){
+    const t = Math.random()*Math.PI*2;
+    const p = heart(t);
+    const px = (p.x*14) + innerWidth/2 + (Math.random()*40-20);
+    const py = (-p.y*14) + innerHeight/2 - 40 + (Math.random()*40-20);
+    parts.push({x:px,y:py, r:Math.random()*1.6+0.6, a:Math.random()*1, v:(Math.random()*.7+.3)});
+  }
+}
+function tick(){
+  ctx.clearRect(0,0,innerWidth,innerHeight);
+  // soft space dust
+  for(let i=0;i<40;i++){
+    const x=Math.random()*innerWidth, y=Math.random()*innerHeight;
+    ctx.fillStyle='rgba(255,255,255,.02)'; ctx.fillRect(x,y,1,1);
+  }
+  // links
+  ctx.lineWidth=0.6; ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.beginPath();
+  for(let i=0;i<parts.length;i++){
+    for(let j=i+1;j<parts.length;j++){
+      const dx=parts[i].x-parts[j].x, dy=parts[i].y-parts[j].y;
+      const d = Math.hypot(dx,dy);
+      if(d<90){ ctx.moveTo(parts[i].x,parts[i].y); ctx.lineTo(parts[j].x,parts[j].y); }
+    }
+  }
+  ctx.stroke();
+  // stars
+  for(const p of parts){
+    p.a += 0.02*p.v;
+    const glow = (Math.sin(p.a)*0.5+0.5)*0.8 + 0.2;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*glow,0,Math.PI*2);
+    const grad = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y,p.r*3);
+    grad.addColorStop(0, 'rgba(255,255,255,.95)');
+    grad.addColorStop(1, 'rgba(255,255,255,.05)');
+    ctx.fillStyle = grad; ctx.fill();
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ===== Init ===== */
+document.addEventListener('DOMContentLoaded', async ()=>{
+  resize(); initStars(); requestAnimationFrame(tick);
+  window.addEventListener('resize', ()=>{ resize(); initStars(); });
+
+  if(isInApp()){ ext.style.display='block'; openExt.addEventListener('click', openInBrowser); }
+
+  personalize();
+  buildGrid();
+
+  await autoplayMuted(); attachFirstInteraction();
+
+  burst(36);
+
+// Sau đó lặp lại mỗi 3 giây
+  setInterval(() => burst(36), 3000);
+  // $('#confetti').addEventListener('click', ()=>burst(36));
+  playBtn.addEventListener('click', unmuteAndFade);
+});
+</script>
+</body>
+</html>
